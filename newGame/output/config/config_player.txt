@@ -1,0 +1,11 @@
+Player_name = Arian
+Max_Health = 300
+Current_Health = 300
+Armor = 2
+damage = 8
+Lvl = 3
+XP = 100
+Silver = 0
+Agility = 2
+Strength = 2
+Intelligence = 2
