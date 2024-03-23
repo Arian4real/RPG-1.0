@@ -54,6 +54,47 @@ class Item
             this->price = price;
         }
 
+};
+
+class Potion
+{
+    private:
+        int power;
+        string name;
+        int price;
+        string type;
+        
+    public:
+
+        Potion(string name, string type, int power, int price)
+        {
+            setPower(power);
+            setType(type);
+            setPrice(price);
+            setName(name);
+
+        }
+
+        int getPrice()
+        {
+            return price;
+        }
+
+        string getName()
+        {
+            return name;
+        }
+
+        void setName(string name)
+        {
+            this->name = name;
+        }
+
+        void setPrice(int price)
+        {
+            this->price = price;
+        }
+
         void setType(string type)
         {
             this->type = type;
@@ -62,25 +103,6 @@ class Item
         string getType()
         {
             return type;
-        }
-
-        virtual ~Item() {}
-};
-
-class Potion : public Item
-{
-    private:
-
-        int power;
-
-    public:
-
-        Potion(string name, string type, int power, int price)
-        {
-            this->power = power;
-            setType(type);
-            setPrice(price);
-            setName(name);
         }
 
         void setPower(int power)
@@ -92,6 +114,7 @@ class Potion : public Item
         {
             return power;
         }
+
 };
 
 class player
@@ -221,10 +244,29 @@ class hero : public player, public attribute
             private:
                 int size;
                 vector<Item> items;
+                vector<Potion> potions;
             public:
 
             void addItem(Item item) {
                 items.push_back(item);
+            }
+
+            void addPotion(Potion potion) {
+                potions.push_back(potion);
+            }
+
+            void removePotion(int index)
+            {
+                if(index >= 0 and index < potions.size())
+                {
+                    potions.erase(potions.begin() + index);
+                }
+                else
+                {
+                    cout << endl << "Out of range. Invent." << endl;
+                    cout << index;
+                    exit(1);
+                }
             }
 
             void removeItem(int index)
@@ -235,30 +277,34 @@ class hero : public player, public attribute
                 }
                 else
                 {
-                    cout << "Out of range. Invent." << endl;
+                    cout << endl << "Out of range. Invent." << endl;
+                    cout << index;
                     exit(1);
                 }
-            }
-
-            void usePotion(int index, hero &gamer)
-            {
-                Potion* potion = dynamic_cast<Potion*>(&items[index]);
-                if (potion != nullptr) {
-                    if (potion->getType() == "hp") {
-                    gamer.setCurrentHealth(gamer.getCurrentHealth() + potion->getPower());
-                    if (gamer.getCurrentHealth() > gamer.getMaxHealth())
-                    {
-                        gamer.setCurrentHealth(gamer.getMaxHealth());
-                    }
-                }
-                }
-
-                removeItem(index);
             }
 
             vector<Item> getItems()
             {
                 return items;
+            }
+
+            vector<Potion> getPotions()
+            {
+                return potions;
+            }
+
+            void usePotion(int index, hero &gamer)
+            {
+                if (gamer.invent.getPotions()[index].getType() == "hp") {
+                    int power = gamer.invent.getPotions()[index].getPower();
+                        gamer.setCurrentHealth(gamer.getCurrentHealth() + power);
+                        if (gamer.getCurrentHealth() > gamer.getMaxHealth())
+                        {
+                            gamer.setCurrentHealth(gamer.getMaxHealth());
+                        }  
+                }
+
+                gamer.invent.removePotion(index);
             }
         };
 
@@ -1304,7 +1350,7 @@ void shopMenu(bool &shop, hero &gamer)
 
             if (gamer.getSivler() >= potionShop.getItems()[selectedItem].getPrice()) {
                 gamer.setSilver(gamer.getSivler() - potionShop.getItems()[selectedItem].getPrice());
-                gamer.invent.addItem(potionShop.getItems()[selectedItem]);
+                gamer.invent.addPotion(potionShop.getItems()[selectedItem]);
                 cout << "You bought: " << potionShop.getItems()[selectedItem].getName() << endl;
             }
 
@@ -1324,12 +1370,12 @@ void invent(bool &inv, hero& gamer)
     {
         system("cls");
         cout << "===========================" << endl;
-        for (int i = 0; i < gamer.invent.getItems().size(); i++) {
+        for (int i = 0; i < gamer.invent.getPotions().size(); i++) {
             if (i == selectedItem)
                 cout << "> ";
             else
                 cout << "  ";
-            cout << gamer.invent.getItems()[i].getName() << endl;
+            cout << gamer.invent.getPotions()[i].getName() << endl;
             cout << "===========================" << endl;
         }
         cout << "Press 'p' to continue";
@@ -1398,11 +1444,10 @@ void run()
             gamer.readFromFile(player_config);
             gf.readFromFile(field_config);
             mob.readFromFile(creep_config);
-            gamer.forceLvlUp();
+            //gamer.forceLvlUp();
             prof = false;
         }
     }
-
 
     while (game)
     {
