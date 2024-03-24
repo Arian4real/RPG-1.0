@@ -218,8 +218,9 @@ class hero : public player, public attribute
         int xp;
         int xpToLvlUP;
         int silver;
-        int miss;
+        float miss;
         int current_health;
+        int free_attribute;
 
         void setArmor()
         {
@@ -233,7 +234,7 @@ class hero : public player, public attribute
 
         void setMaxHealth()
         {
-            max_health = round(200 + (getStrength() * 49.9));
+            max_health = round(100 + (getStrength() * 49.9));
         }
 
     public:
@@ -312,13 +313,24 @@ class hero : public player, public attribute
 
         // --
 
+        void setFreeAttribute(int free_attribute)
+        {
+            this->free_attribute = free_attribute;
+        }
+
+        int getFreeAttribute()
+        {
+            return free_attribute;
+        }
+
         int getCurrentHealth()
         {
             return current_health;
         }
 
-        int getMiss()
+        float getMiss()
         {
+            forceMiss();
             return miss;
         }
 
@@ -342,7 +354,7 @@ class hero : public player, public attribute
             this->current_health = current_health;
         }
 
-        void setMiss(int miss)
+        void setMiss(float miss)
         {
             this->miss = miss;
         }
@@ -385,6 +397,8 @@ class hero : public player, public attribute
                 setArmor();
                 setDamage();
                 forceMiss();
+
+                setFreeAttribute(getFreeAttribute()+1);
 
                 setCurrentHealth(getMaxHealth());
 
@@ -460,6 +474,7 @@ class hero : public player, public attribute
             outfile << "Agility = " << getAgility() << "\n";
             outfile << "Strength = " << getStrength() << "\n";
             outfile << "Intelligence = " << getIntelligence() << "\n";
+            outfile << "Free Attribute = " << getFreeAttribute() << "\n";
 
             outfile.close();
         }
@@ -501,6 +516,8 @@ class hero : public player, public attribute
                         setStrength(stoi(value));
                     } else if (key == "Intelligence") {
                         setIntelligence(stoi(value));
+                    } else if (key == "Free Attribute") {
+                        setFreeAttribute(stoi(value));
                     }
                 }
             }
@@ -509,7 +526,39 @@ class hero : public player, public attribute
         }
 
         void forceMiss() {
-            miss = getAgility() / 200;
+            miss = getAgility() * 0.005;
+        }
+
+        int attributeF(vector<string> attribute, int i)
+        {
+                if (attribute[i] == "Agility")
+                {
+                    return getAgility();
+                } else if (attribute[i] == "Strength")
+                {
+                    return getStrength();
+                } else if (attribute[i] == "Intelligence")
+                {
+                    return getIntelligence();
+                }
+        }
+
+        void attributeS(vector<string> attribute, int i)
+        {
+                if (attribute[i] == "Agility")
+                {
+                    setAgility(getAgility() + 1);
+                } else if (attribute[i] == "Strength")
+                {
+                    setStrength(getStrength() + 1);
+                } else if (attribute[i] == "Intelligence")
+                {
+                    setIntelligence(getIntelligence() + 1);
+                }
+
+                setMaxHealth();
+                setArmor();
+                setDamage();
         }
 
         hero()
@@ -960,6 +1009,8 @@ class Attack {
 
     public:
 
+        float ran;
+
         Attack(hero &gamer, creep &mob)
         {
             this->gamer = gamer;
@@ -1000,14 +1051,16 @@ class Attack {
         }
 
         void mobCounterAttack() {
+            float random = static_cast <float> (rand()) / static_cast <float> (RAND_MAX); // Случайное число от 0 до 1
 
-            srand(time(0));
-
-            if (rand() % 2 == 0) {
-                attackOnPlayer();
-            } else {
+            if (random < gamer.getMiss()) {
+                // Промах
                 return;
+            } else {
+                // Атака
+                attackOnPlayer();
             }
+            ran = random;
         }
 
         hero &getGamer()
@@ -1086,6 +1139,7 @@ void invent(bool &inv, hero& gamer);
 
 int main()
 {
+    srand(time(0));
     system("mkdir config");
     run();
 }
@@ -1215,6 +1269,9 @@ void attack_menu(bool &menu, hero &gamer, creep &mob)
         cout << "Press 'q' to escape." << endl;
         cout << "Press 'd' to defence." << endl;
 
+        cout << gamer.getMiss() << endl;
+        cout << atk.ran << endl;
+
         if(_kbhit)
         {
             key = _getch();
@@ -1273,33 +1330,54 @@ void coinClaim(hero &gamer, creep &mob, bool &menu)
 
 void stats_menu(hero &gamer, bool &menu)
 {
-    system("cls");
+    int selectedItem = 0;
+    vector<string> attributes = {"Agility", "Strength", "Intelligence"};
+    menu = true;
 
-    cout << "===========================" << endl;
-    cout << "Name: " << gamer.getName() << endl;
-    cout << "Level: " << gamer.getLvl() << endl;
-    cout << "===========================" << endl;
-    cout << "Max Health: " << gamer.getMaxHealth() << endl;
-    cout << "Current Health: " << gamer.getCurrentHealth() << endl;
-    cout << "Armor: " << gamer.getArmor() << endl;
-    cout << "Damage: " << gamer.getDamage() << endl;
-    cout << "===========================" << endl;
-    cout << "Agility: " << gamer.getAgility() << endl;
-    cout << "Strength: " << gamer.getStrength() << endl;
-    cout << "Intelligence: " << gamer.getIntelligence() << endl;
-    cout << "===========================" << endl;
-    cout << "Press 'p' to continue";
-
-    char key;
-    do
+    while (menu)
     {
-        if(_kbhit())
-        {
-            key = _getch();
-        }
-    } while (key != 'p');
+        system("cls");
 
-    menu = false;
+        cout << "===========================" << endl;
+        cout << "Name: " << gamer.getName() << endl;
+        cout << "Level: " << gamer.getLvl() << endl;
+        cout << "===========================" << endl;
+        cout << "Max Health: " << gamer.getMaxHealth() << endl;
+        cout << "Current Health: " << gamer.getCurrentHealth() << endl;
+        cout << "Armor: " << gamer.getArmor() << endl;
+        cout << "Damage: " << gamer.getDamage() << endl;
+        cout << "===========================" << endl;
+        
+        for (int i = 0; i < attributes.size(); i++) {
+            if (i == selectedItem)
+                cout << "> ";
+            else
+                cout << "  ";
+            cout << attributes[i] << ": " << gamer.attributeF(attributes, i) <<endl;
+            cout << "===========================" << endl;
+        }
+
+        cout << "Free Attribute: " << gamer.getFreeAttribute() << endl;
+        cout << "===========================" << endl;
+        cout << "Press 'p' to continue";
+
+        char key = getch();
+        if (key == 'w' && selectedItem > 0) {
+            selectedItem--;
+        }
+        else if (key == 's' && selectedItem < attributes.size() - 1) {
+            selectedItem++;
+        } else if (key == 'p') {
+            menu = false;
+        } else if (key == 'e') {
+            if (gamer.getFreeAttribute() > 0)
+            {
+                gamer.attributeS(attributes, selectedItem);
+                gamer.setFreeAttribute(gamer.getFreeAttribute() - 1);
+            }
+        }
+        
+    }
 }
 
 vector<Potion> potionInnit()
@@ -1395,7 +1473,6 @@ void invent(bool &inv, hero& gamer)
         } else if (key == 'e') {
             gamer.invent.usePotion(selectedItem, gamer);
         }
-        
     }
 }
 

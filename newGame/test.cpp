@@ -1,24 +1,81 @@
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 
 using namespace std;
 
-void displayHealthBar() {
-    const int barWidth = 20;
-    cout << "HP: ";
-    int pos = barWidth * current_hp / max_hp;
-    for (int i = 0; i < barWidth; i++) {
-        if (i < pos) {
-            cout << "|";
-        } else if (i == pos) {
-            cout << "|";
-        } else {
-            cout << " ";
+class test1
+{
+    private:
+        string name;
+    public:
+
+        int a;
+
+        string getName()
+        {
+            return name;
         }
-    }
-    cout << " " << current_hp << "/" << max_hp << "\n";
-}
+
+        void setName(string name)
+        {
+            this->name = name;
+        }
+
+};
+
+class test : public test1
+{
+    public:
+        
+        int x;
+        int y;
+
+        test()
+        {
+            setName("Arian");
+            x = 0;
+            y = 0;
+        }
+
+        test(string name)
+        {
+            setName(name);
+            x = 1;
+            y = 1;
+        }
+
+        void save(const string& filename) {
+            ofstream file(filename);
+            boost::archive::text_oarchive oa(file);
+            oa << *this;
+        }
+
+        void load(const string& filename) {
+            ifstream file(filename);
+            boost::archive::text_iarchive ia(file);
+            ia >> *this;
+        }
+};
 
 int main()
 {
-    displayHealthBar();
+    test koko;
+            ifstream infile("test.txt");
+
+            if (!infile.is_open())
+            {
+                cout << "error!" << endl;
+            } else 
+            {
+                infile.read((char*)&koko, sizeof(test));
+            }
+
+            infile.close();
+
+            cout << koko.getName();
+
+
 }

@@ -1,6 +1,6 @@
 Name = Goblin
 Damage = 7
-Health = 6
+Health = 50
 Armor = 1
 Lvl = 1
 Silver_value = 30
