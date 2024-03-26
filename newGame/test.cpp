@@ -1,9 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-
+#include <chrono>
+#include <thread>
 using namespace std;
 
 class test1
@@ -47,22 +46,23 @@ class test : public test1
             y = 1;
         }
 
-        void save(const string& filename) {
-            ofstream file(filename);
-            boost::archive::text_oarchive oa(file);
-            oa << *this;
+        void write(test &koko)
+        {
+            ofstream file("test.txt");
+
+            if (!file.is_open())
+            {
+                cout << "error!" << endl;
+            } else 
+            {
+                file.write((char*)&koko, sizeof(test));
+            }
+
+            file.close();
         }
 
-        void load(const string& filename) {
-            ifstream file(filename);
-            boost::archive::text_iarchive ia(file);
-            ia >> *this;
-        }
-};
-
-int main()
-{
-    test koko;
+        void read(test &koko)
+        {
             ifstream infile("test.txt");
 
             if (!infile.is_open())
@@ -74,8 +74,13 @@ int main()
             }
 
             infile.close();
+        }
+};
 
-            cout << koko.getName();
-
-
+int main()
+{
+    while (true) {
+        cout << "Текст выводится каждую секунду" << endl;
+        this_thread::sleep_for(chrono::milliseconds(500));
+    }
 }

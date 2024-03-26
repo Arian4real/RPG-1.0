@@ -12,7 +12,7 @@
 #include <set>
 #include <utility>
 
-#define sizeArray 9
+#define sizeArray 12
 #define icon_player '@'
 #define icon_coin '$'
 #define icon_tower '&'
@@ -235,6 +235,7 @@ class hero : public player, public attribute
         void setMaxHealth()
         {
             max_health = round(100 + (getStrength() * 49.9));
+            setCurrentHealth(max_health);
         }
 
     public:
@@ -1040,7 +1041,7 @@ class Attack {
 
         void attackOnPlayer()
         {
-            int damage = gamer.getCurrentHealth() - (mob.getDamage() - (mob.getDamage()*gamer.getArmor()*0.05));
+            int damage = gamer.getCurrentHealth() - (mob.getDamage() - (mob.getDamage()*gamer.getArmor()*0.005));
 
             gamer.setCurrentHealth(damage);
 
@@ -1126,7 +1127,6 @@ class Shop
         }
 
 };
-
 
 void run();
 void creationField(gameField &gField, hero &gamer, creep &mob, Tower &turret);
@@ -1268,9 +1268,6 @@ void attack_menu(bool &menu, hero &gamer, creep &mob)
         cout << "Press 'a' to attack." << endl;
         cout << "Press 'q' to escape." << endl;
         cout << "Press 'd' to defence." << endl;
-
-        cout << gamer.getMiss() << endl;
-        cout << atk.ran << endl;
 
         if(_kbhit)
         {
