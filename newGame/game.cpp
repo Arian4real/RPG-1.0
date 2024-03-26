@@ -11,6 +11,8 @@
 #include <sstream>
 #include <set>
 #include <utility>
+#include <thread>
+#include <chrono>
 
 #define sizeArray 12
 #define icon_player '@'
@@ -442,8 +444,8 @@ class hero : public player, public attribute
 
         void displayHealthBar() {
             const int barWidth = 20;
-            cout << "HP: ";
-            int pos = barWidth * current_health / max_health;
+            cout << "\rHP: "; // Use carriage return to move cursor to the start of the line
+            int pos = barWidth * getCurrentHealth() / getMaxHealth();
             for (int i = 0; i < barWidth; i++) {
                 if (i < pos) {
                     cout << "|";
@@ -453,7 +455,8 @@ class hero : public player, public attribute
                     cout << " ";
                 }
             }
-            cout << " " << current_health << "/" << max_health << "\n";
+            cout << " " << getCurrentHealth() << "/" << getMaxHealth() << " " << endl;
+            cout.flush(); // Ensure the output is displayed immediately
         }
 
         void writeToFile(const string& filename) {
@@ -580,6 +583,7 @@ class hero : public player, public attribute
             xp = 0;
             silver = 0;
             current_health = max_health;
+            free_attribute = 0;
 
         }
   
@@ -627,43 +631,43 @@ class gameField
         }
 
         void writeToFile(const string& filename) {
-    ofstream outfile(filename);
+            ofstream outfile(filename);
 
-    if (!outfile) {
-        cerr << "Не удалось открыть файл для записи" << endl;
-        return;
-    }
+            if (!outfile) {
+                cerr << "Не удалось открыть файл для записи" << endl;
+                return;
+            }
 
-    for (const auto &row : field) {
-        for (const auto &element : row) {
-            outfile << element << ' ';
-        }
-        outfile << '\n';
-    }
+            for (const auto &row : field) {
+                for (const auto &element : row) {
+                    outfile << element << ' ';
+                }
+                outfile << '\n';
+            }
 
-    outfile.close();
-}
-
-    void readFromFile(const string& filename) {
-        ifstream infile(filename);
-
-        if (!infile) {
-            cerr << "Не удалось открыть файл для чтения" << endl;
-            return;
+            outfile.close();
         }
 
-        string line;
-        vector<vector<char>> newField;
-        while (getline(infile, line)) {
-            istringstream iss(line);
-            vector<char> row((istream_iterator<char>(iss)), istream_iterator<char>());
-            newField.push_back(row);
+        void readFromFile(const string& filename) {
+            ifstream infile(filename);
+
+            if (!infile) {
+                cerr << "Не удалось открыть файл для чтения" << endl;
+                return;
+            }
+
+            string line;
+            vector<vector<char>> newField;
+            while (getline(infile, line)) {
+                istringstream iss(line);
+                vector<char> row((istream_iterator<char>(iss)), istream_iterator<char>());
+                newField.push_back(row);
+            }
+
+            setField(newField);
+
+            infile.close();
         }
-
-        setField(newField);
-
-        infile.close();
-    }
 };
 
 class coin
@@ -979,16 +983,28 @@ class Tower
             }
         }
 
-        void towerVision(player &gamer) {
+        void towerVision(hero &gamer) {
             for (int di = 0; di < amount; di++)
             {
                 for (int i = -range; i <= range; i++) {
                     for (int j = -range; j <= range; j++) {
                         if ((y[di] + j == gamer.getY()) and (x[di] + i == gamer.getX())) {
-                            cout << "Gotcha!" << endl;
+                            radience(gamer);
+                            cout << "Gotcha!" <<endl;
                         }
                     }
                 }
+            }
+        }
+
+        void radience(hero &gamer)
+        {
+            if (gamer.getCurrentHealth() > 0)
+            {
+                gamer.setCurrentHealth(gamer.getCurrentHealth() - 1);
+            } else if (gamer.getCurrentHealth() < 0){
+                cout << "You Died!" << endl;
+                exit(0);
             }
         }
 
@@ -1473,6 +1489,64 @@ void invent(bool &inv, hero& gamer)
     }
 }
 
+void khbits(bool& game, hero &gamer, gameField& gf, creep& mob, bool& menu)
+{
+    bool inv = false;
+    bool shop = false;
+
+    while(game)
+    {
+        if (_kbhit)
+        {
+            char key = _getch();
+
+            if (key == 'q')
+            {
+                game = false;
+            } 
+            else if (key == 'e')
+            {
+                stats_menu(gamer, menu);
+            }
+            else if (key == 'b')
+            {
+                shopMenu(menu, gamer);
+            } else if (key == 'i')
+            {
+                invent(menu, gamer);
+            }
+            else if (!menu and !shop and !inv)
+            {
+                movement(gf, gamer, key);
+            }
+        }
+
+        coinClaim(gamer, mob, menu);
+
+        gamer.writeToFile(player_config);
+        gf.writeToFile(field_config);
+        mob.writeToFile(creep_config);
+
+        if (gamer.getCurrentHealth() == 0)
+        {
+            cout << "YOU DIED" << endl;
+            exit(0);
+        }
+    }
+}
+
+void towerAttack(hero& gamer, Tower& turret, bool &menu)
+{
+    while (true)
+    {
+        if (!menu)
+        {
+            turret.towerVision(gamer);
+            this_thread::sleep_for(chrono::milliseconds(500));
+        }
+    }
+}
+
 void run()
 {
     creep mob("Goblin");
@@ -1481,9 +1555,7 @@ void run()
 
     bool game = true;
     bool menu = false;
-    bool inv = false;
     bool prof = true;
-    bool shop = false;
 
     Tower turret(1);
     string name;
@@ -1523,6 +1595,12 @@ void run()
         }
     }
 
+    thread th(khbits, ref(game), ref(gamer), ref(gf), ref(mob), ref(menu));
+    th.detach();
+    thread th1(towerAttack, ref(gamer), ref(turret), ref(menu));
+    th1.detach();
+
+
     while (game)
     {
         if (!menu)
@@ -1530,7 +1608,6 @@ void run()
             system("cls");
             creationField(gf, gamer, mob, turret);
             gf.output();
-            turret.towerVision(gamer);
 
             cout << "XP: " << gamer.getXP() << endl;
             cout << "Need to lvlUP: " << gamer.getXpToLvlUP() << endl;
@@ -1538,42 +1615,6 @@ void run()
             cout << "Press 'E' to open stats" << endl;
             cout << "Press 'B' to open shop" << endl;
             cout << "Press 'I' to open Inventory" << endl;
-        }
-
-        if (_kbhit)
-        {
-            char key = _getch();
-
-            if (key == 'q')
-            {
-                game = false;
-            } 
-            else if (key == 'e')
-            {
-                stats_menu(gamer, menu);
-            }
-            else if (key == 'b')
-            {
-                shopMenu(shop, gamer);
-            } else if (key == 'i')
-            {
-                invent(inv, gamer);
-            }
-            else if (!menu and !shop and !inv)
-            {
-                movement(gf, gamer, key);
-            }
-        }
-        coinClaim(gamer, mob, menu);
-
-        gamer.writeToFile(player_config);
-        gf.writeToFile(field_config);
-        mob.writeToFile(creep_config);
-
-        if (gamer.getCurrentHealth() == 0)
-        {
-            cout << "YOU DIED" << endl;
-            exit(0);
         }
     }
 }

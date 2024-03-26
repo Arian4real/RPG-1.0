@@ -64,6 +64,7 @@
     "unordered_map": "cpp",
     "iostream": "cpp",
     "iosfwd": "cpp",
-    "ostream": "cpp"
+    "ostream": "cpp",
+    "thread": "cpp"
   }
 }
